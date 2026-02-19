@@ -21,6 +21,12 @@ Use these placeholders in subject and message:
 - `{user_email}`
 - `{set_password_url}`
 - `{login_url}`
+- `{meta:your_meta_key}` (for user meta)
+
+Examples:
+
+- `{meta:parrain}`
+- `{meta:first_name}`
 
 ## Install
 

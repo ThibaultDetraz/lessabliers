@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom New User Email
  * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -92,6 +92,7 @@ class CNE_Custom_New_User_Email {
 
 		$settings = $this->get_settings();
 		$notice   = isset( $_GET['cne_notice'] ) ? sanitize_key( wp_unslash( $_GET['cne_notice'] ) ) : '';
+		$meta_example = '{meta:parrain}';
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Custom New User Email', 'custom-new-user-email' ); ?></h1>
@@ -173,7 +174,8 @@ class CNE_Custom_New_User_Email {
 								<code>{username}</code>,
 								<code>{user_email}</code>,
 								<code>{set_password_url}</code>,
-								<code>{login_url}</code>
+								<code>{login_url}</code>,
+								<code><?php echo esc_html( $meta_example ); ?></code>
 							</p>
 						</td>
 					</tr>
@@ -227,8 +229,8 @@ class CNE_Custom_New_User_Email {
 			'{login_url}'        => wp_login_url(),
 		);
 
-		$subject = strtr( $settings['subject'], $replacements );
-		$message = strtr( $settings['message'], $replacements );
+		$subject = $this->replace_placeholders( $settings['subject'], $replacements, $current_user );
+		$message = $this->replace_placeholders( $settings['message'], $replacements, $current_user );
 		$headers = array();
 
 		if ( ! empty( $settings['send_html'] ) ) {
@@ -257,6 +259,34 @@ class CNE_Custom_New_User_Email {
 
 		wp_safe_redirect( $url );
 		exit;
+	}
+
+	private function replace_placeholders( $content, $replacements, $user ) {
+		$content = strtr( (string) $content, (array) $replacements );
+
+		if ( ! ( $user instanceof WP_User ) ) {
+			return $content;
+		}
+
+		return preg_replace_callback(
+			'/\{meta:([^}]+)\}/',
+			static function ( $matches ) use ( $user ) {
+				$meta_key = sanitize_key( trim( $matches[1] ) );
+
+				if ( '' === $meta_key ) {
+					return '';
+				}
+
+				$meta_value = get_user_meta( $user->ID, $meta_key, true );
+
+				if ( is_array( $meta_value ) || is_object( $meta_value ) ) {
+					return '';
+				}
+
+				return (string) $meta_value;
+			},
+			$content
+		);
 	}
 
 	public function filter_new_user_email( $wp_new_user_notification_email, $user, $blogname ) {
@@ -288,8 +318,8 @@ class CNE_Custom_New_User_Email {
 			'{login_url}'        => wp_login_url(),
 		);
 
-		$subject = strtr( $settings['subject'], $replacements );
-		$message = strtr( $settings['message'], $replacements );
+		$subject = $this->replace_placeholders( $settings['subject'], $replacements, $user );
+		$message = $this->replace_placeholders( $settings['message'], $replacements, $user );
 
 		$wp_new_user_notification_email['subject'] = $subject;
 		$wp_new_user_notification_email['message'] = $message;
