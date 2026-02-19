@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom New User Email
  * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -25,6 +25,7 @@ class CNE_Custom_New_User_Email {
 	public static function defaults() {
 		return array(
 			'enabled'    => 1,
+			'send_html'  => 0,
 			'from_name'  => '',
 			'from_email' => '',
 			'subject'    => 'Welcome to {site_name}',
@@ -62,13 +63,22 @@ class CNE_Custom_New_User_Email {
 
 	public function sanitize_settings( $input ) {
 		$defaults = self::defaults();
+		$send_html = isset( $input['send_html'] ) ? 1 : 0;
+		$message   = isset( $input['message'] ) ? wp_unslash( $input['message'] ) : $defaults['message'];
+
+		if ( $send_html ) {
+			$message = wp_kses_post( $message );
+		} else {
+			$message = sanitize_textarea_field( $message );
+		}
 
 		return array(
 			'enabled'    => isset( $input['enabled'] ) ? 1 : 0,
+			'send_html'  => $send_html,
 			'from_name'  => isset( $input['from_name'] ) ? sanitize_text_field( $input['from_name'] ) : $defaults['from_name'],
 			'from_email' => isset( $input['from_email'] ) ? sanitize_email( $input['from_email'] ) : $defaults['from_email'],
 			'subject'    => isset( $input['subject'] ) ? sanitize_text_field( $input['subject'] ) : $defaults['subject'],
-			'message'    => isset( $input['message'] ) ? sanitize_textarea_field( $input['message'] ) : $defaults['message'],
+			'message'    => $message,
 		);
 	}
 
@@ -94,6 +104,17 @@ class CNE_Custom_New_User_Email {
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[enabled]" value="1" <?php checked( 1, (int) $settings['enabled'] ); ?> />
 								<?php esc_html_e( 'Replace default WordPress email for new users', 'custom-new-user-email' ); ?>
 							</label>
+						</td>
+					</tr>
+
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Email format', 'custom-new-user-email' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[send_html]" value="1" <?php checked( 1, (int) $settings['send_html'] ); ?> />
+								<?php esc_html_e( 'Send as HTML email', 'custom-new-user-email' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'When enabled, basic HTML tags are allowed in the message template.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 
@@ -178,6 +199,17 @@ class CNE_Custom_New_User_Email {
 		$wp_new_user_notification_email['message'] = $message;
 
 		$headers = isset( $wp_new_user_notification_email['headers'] ) ? (array) $wp_new_user_notification_email['headers'] : array();
+
+		if ( ! empty( $settings['send_html'] ) ) {
+			$headers = array_filter(
+				$headers,
+				static function( $header ) {
+					return 0 !== stripos( $header, 'Content-Type:' );
+				}
+			);
+
+			$headers[] = 'Content-Type: text/html; charset=UTF-8';
+		}
 
 		if ( ! empty( $settings['from_name'] ) && ! empty( $settings['from_email'] ) ) {
 			$headers[] = sprintf( 'From: %s <%s>', $settings['from_name'], $settings['from_email'] );
