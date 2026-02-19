@@ -29,6 +29,7 @@ class CNE_Custom_New_User_Email {
 			'send_html'  => 0,
 			'from_name'  => '',
 			'from_email' => '',
+			'preview_email' => '',
 			'subject'    => 'Welcome to {site_name}',
 			'message'    => "Hi {username},\n\nYour account has been created on {site_name}.\n\nSet your password here:\n{set_password_url}\n\nThen log in at:\n{login_url}\n\nIf you did not expect this account, please ignore this email.",
 		);
@@ -78,6 +79,7 @@ class CNE_Custom_New_User_Email {
 			'send_html'  => $send_html,
 			'from_name'  => isset( $input['from_name'] ) ? sanitize_text_field( $input['from_name'] ) : $defaults['from_name'],
 			'from_email' => isset( $input['from_email'] ) ? sanitize_email( $input['from_email'] ) : $defaults['from_email'],
+			'preview_email' => isset( $input['preview_email'] ) ? sanitize_email( $input['preview_email'] ) : $defaults['preview_email'],
 			'subject'    => isset( $input['subject'] ) ? sanitize_text_field( $input['subject'] ) : $defaults['subject'],
 			'message'    => $message,
 		);
@@ -101,6 +103,8 @@ class CNE_Custom_New_User_Email {
 				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Test email could not be sent. Check your mail configuration.', 'custom-new-user-email' ); ?></p></div>
 			<?php elseif ( 'test_missing_email' === $notice ) : ?>
 				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'No email found for the current admin user.', 'custom-new-user-email' ); ?></p></div>
+			<?php elseif ( 'test_invalid_email' === $notice ) : ?>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Preview recipient email is not valid.', 'custom-new-user-email' ); ?></p></div>
 			<?php endif; ?>
 
 			<form method="post" action="options.php">
@@ -152,6 +156,14 @@ class CNE_Custom_New_User_Email {
 					</tr>
 
 					<tr>
+						<th scope="row"><label for="cne_preview_email"><?php esc_html_e( 'Preview recipient email', 'custom-new-user-email' ); ?></label></th>
+						<td>
+							<input id="cne_preview_email" class="regular-text" type="email" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[preview_email]" value="<?php echo esc_attr( $settings['preview_email'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'Optional. Used by “Send test email”. If empty, your current admin email is used.', 'custom-new-user-email' ); ?></p>
+						</td>
+					</tr>
+
+					<tr>
 						<th scope="row"><label for="cne_message"><?php esc_html_e( 'Email message', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<textarea id="cne_message" class="large-text code" rows="12" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[message]" required><?php echo esc_textarea( $settings['message'] ); ?></textarea>
@@ -172,7 +184,7 @@ class CNE_Custom_New_User_Email {
 
 			<hr />
 			<h2><?php esc_html_e( 'Email Preview', 'custom-new-user-email' ); ?></h2>
-			<p><?php esc_html_e( 'Send a test email using your saved settings to your current admin account email address.', 'custom-new-user-email' ); ?></p>
+			<p><?php esc_html_e( 'Send a test email using your saved settings to the preview recipient email (or your current admin email if empty).', 'custom-new-user-email' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="cne_send_test_email" />
 				<?php wp_nonce_field( 'cne_send_test_email' ); ?>
@@ -189,14 +201,22 @@ class CNE_Custom_New_User_Email {
 
 		check_admin_referer( 'cne_send_test_email' );
 
+		$settings     = $this->get_settings();
 		$current_user = wp_get_current_user();
-		$to_email     = isset( $current_user->user_email ) ? sanitize_email( $current_user->user_email ) : '';
+		$to_email     = ! empty( $settings['preview_email'] ) ? sanitize_email( $settings['preview_email'] ) : '';
+
+		if ( empty( $to_email ) ) {
+			$to_email = isset( $current_user->user_email ) ? sanitize_email( $current_user->user_email ) : '';
+		}
 
 		if ( empty( $to_email ) ) {
 			$this->redirect_with_notice( 'test_missing_email' );
 		}
 
-		$settings = $this->get_settings();
+		if ( ! is_email( $to_email ) ) {
+			$this->redirect_with_notice( 'test_invalid_email' );
+		}
+
 		$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 
 		$replacements = array(
