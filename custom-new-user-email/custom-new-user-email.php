@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom New User Email
  * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -20,6 +20,7 @@ class CNE_Custom_New_User_Email {
 		add_filter( 'wp_new_user_notification_email', array( $this, 'filter_new_user_email' ), 10, 3 );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_post_cne_send_test_email', array( $this, 'handle_send_test_email' ) );
 	}
 
 	public static function defaults() {
@@ -88,10 +89,19 @@ class CNE_Custom_New_User_Email {
 		}
 
 		$settings = $this->get_settings();
+		$notice   = isset( $_GET['cne_notice'] ) ? sanitize_key( wp_unslash( $_GET['cne_notice'] ) ) : '';
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Custom New User Email', 'custom-new-user-email' ); ?></h1>
 			<p><?php esc_html_e( 'Customize the account creation email sent when an admin creates a user and WordPress asks them to set a password.', 'custom-new-user-email' ); ?></p>
+
+			<?php if ( 'test_sent' === $notice ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Test email sent successfully.', 'custom-new-user-email' ); ?></p></div>
+			<?php elseif ( 'test_error' === $notice ) : ?>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Test email could not be sent. Check your mail configuration.', 'custom-new-user-email' ); ?></p></div>
+			<?php elseif ( 'test_missing_email' === $notice ) : ?>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'No email found for the current admin user.', 'custom-new-user-email' ); ?></p></div>
+			<?php endif; ?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'cne_new_user_email_group' ); ?>
@@ -159,8 +169,74 @@ class CNE_Custom_New_User_Email {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<hr />
+			<h2><?php esc_html_e( 'Email Preview', 'custom-new-user-email' ); ?></h2>
+			<p><?php esc_html_e( 'Send a test email using your saved settings to your current admin account email address.', 'custom-new-user-email' ); ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="cne_send_test_email" />
+				<?php wp_nonce_field( 'cne_send_test_email' ); ?>
+				<?php submit_button( __( 'Send test email', 'custom-new-user-email' ), 'secondary', 'submit', false ); ?>
+			</form>
 		</div>
 		<?php
+	}
+
+	public function handle_send_test_email() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'custom-new-user-email' ) );
+		}
+
+		check_admin_referer( 'cne_send_test_email' );
+
+		$current_user = wp_get_current_user();
+		$to_email     = isset( $current_user->user_email ) ? sanitize_email( $current_user->user_email ) : '';
+
+		if ( empty( $to_email ) ) {
+			$this->redirect_with_notice( 'test_missing_email' );
+		}
+
+		$settings = $this->get_settings();
+		$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+
+		$replacements = array(
+			'{site_name}'        => $blogname,
+			'{username}'         => $current_user->user_login,
+			'{user_email}'       => $to_email,
+			'{set_password_url}' => esc_url_raw( wp_lostpassword_url() ),
+			'{login_url}'        => wp_login_url(),
+		);
+
+		$subject = strtr( $settings['subject'], $replacements );
+		$message = strtr( $settings['message'], $replacements );
+		$headers = array();
+
+		if ( ! empty( $settings['send_html'] ) ) {
+			$headers[] = 'Content-Type: text/html; charset=UTF-8';
+		}
+
+		if ( ! empty( $settings['from_name'] ) && ! empty( $settings['from_email'] ) ) {
+			$headers[] = sprintf( 'From: %s <%s>', $settings['from_name'], $settings['from_email'] );
+		} elseif ( ! empty( $settings['from_email'] ) ) {
+			$headers[] = sprintf( 'From: <%s>', $settings['from_email'] );
+		}
+
+		$sent = wp_mail( $to_email, $subject, $message, $headers );
+
+		$this->redirect_with_notice( $sent ? 'test_sent' : 'test_error' );
+	}
+
+	private function redirect_with_notice( $notice ) {
+		$url = add_query_arg(
+			array(
+				'page'       => 'custom-new-user-email',
+				'cne_notice' => sanitize_key( $notice ),
+			),
+			admin_url( 'options-general.php' )
+		);
+
+		wp_safe_redirect( $url );
+		exit;
 	}
 
 	public function filter_new_user_email( $wp_new_user_notification_email, $user, $blogname ) {

@@ -9,6 +9,7 @@ Customize the email a user receives when an administrator creates the account an
 - Optional HTML email mode (with safe HTML tags)
 - Optional custom sender name and sender email
 - Enable/disable switch from WordPress admin
+- One-click test email button for template preview
 
 ## Placeholders
 
@@ -27,6 +28,7 @@ Use these placeholders in subject and message:
 3. Go to **Settings > Custom New User Email**.
 4. (Optional) Enable **Send as HTML email**.
 5. Update subject/message and save.
+6. Use **Send test email** to receive a preview at your current admin email address.
 
 ## Notes
 
