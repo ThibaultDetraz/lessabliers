@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom New User Email
  * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -32,6 +32,7 @@ class CNE_Custom_New_User_Email {
 			'preview_email' => '',
 			'subject'    => 'Welcome to {site_name}',
 			'message'    => "Hi {username},\n\nYour account has been created on {site_name}.\n\nSet your password here:\n{set_password_url}\n\nThen log in at:\n{login_url}\n\nIf you did not expect this account, please ignore this email.",
+			'message_f'  => '',
 		);
 	}
 
@@ -67,11 +68,14 @@ class CNE_Custom_New_User_Email {
 		$defaults = self::defaults();
 		$send_html = isset( $input['send_html'] ) ? 1 : 0;
 		$message   = isset( $input['message'] ) ? wp_unslash( $input['message'] ) : $defaults['message'];
+		$message_f = isset( $input['message_f'] ) ? wp_unslash( $input['message_f'] ) : $defaults['message_f'];
 
 		if ( $send_html ) {
 			$message = wp_kses_post( $message );
+			$message_f = wp_kses_post( $message_f );
 		} else {
 			$message = sanitize_textarea_field( $message );
+			$message_f = sanitize_textarea_field( $message_f );
 		}
 
 		return array(
@@ -82,6 +86,7 @@ class CNE_Custom_New_User_Email {
 			'preview_email' => isset( $input['preview_email'] ) ? sanitize_email( $input['preview_email'] ) : $defaults['preview_email'],
 			'subject'    => isset( $input['subject'] ) ? sanitize_text_field( $input['subject'] ) : $defaults['subject'],
 			'message'    => $message,
+			'message_f'  => $message_f,
 		);
 	}
 
@@ -165,7 +170,7 @@ class CNE_Custom_New_User_Email {
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_message"><?php esc_html_e( 'Email message', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_message"><?php esc_html_e( 'Email message (M / default)', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<textarea id="cne_message" class="large-text code" rows="12" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[message]" required><?php echo esc_textarea( $settings['message'] ); ?></textarea>
 							<p class="description">
@@ -177,6 +182,14 @@ class CNE_Custom_New_User_Email {
 								<code>{login_url}</code>,
 								<code><?php echo esc_html( $meta_example ); ?></code>
 							</p>
+						</td>
+					</tr>
+
+					<tr>
+						<th scope="row"><label for="cne_message_f"><?php esc_html_e( 'Email message for genre F', 'custom-new-user-email' ); ?></label></th>
+						<td>
+							<textarea id="cne_message_f" class="large-text code" rows="12" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[message_f]"><?php echo esc_textarea( $settings['message_f'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Used when user meta genre is F. If empty, default message is used.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 				</table>
@@ -221,16 +234,23 @@ class CNE_Custom_New_User_Email {
 
 		$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 
+		$preview_user = get_user_by( 'email', $to_email );
+
+		if ( ! ( $preview_user instanceof WP_User ) ) {
+			$preview_user = $current_user;
+		}
+
 		$replacements = array(
 			'{site_name}'        => $blogname,
-			'{username}'         => $current_user->user_login,
+			'{username}'         => $preview_user->user_login,
 			'{user_email}'       => $to_email,
 			'{set_password_url}' => esc_url_raw( wp_lostpassword_url() ),
 			'{login_url}'        => wp_login_url(),
 		);
 
-		$subject = $this->replace_placeholders( $settings['subject'], $replacements, $current_user );
-		$message = $this->replace_placeholders( $settings['message'], $replacements, $current_user );
+		$subject = $this->replace_placeholders( $settings['subject'], $replacements, $preview_user );
+		$message_template = $this->get_message_template_for_user( $settings, $preview_user );
+		$message = $this->replace_placeholders( $message_template, $replacements, $preview_user );
 		$headers = array();
 
 		if ( ! empty( $settings['send_html'] ) ) {
@@ -289,6 +309,30 @@ class CNE_Custom_New_User_Email {
 		);
 	}
 
+	private function get_message_template_for_user( $settings, $user ) {
+		$genre = $this->get_user_genre( $user );
+
+		if ( 'F' === $genre && ! empty( $settings['message_f'] ) ) {
+			return $settings['message_f'];
+		}
+
+		return $settings['message'];
+	}
+
+	private function get_user_genre( $user ) {
+		if ( ! ( $user instanceof WP_User ) ) {
+			return '';
+		}
+
+		$genre = get_user_meta( $user->ID, 'genre', true );
+
+		if ( is_array( $genre ) || is_object( $genre ) ) {
+			return '';
+		}
+
+		return strtoupper( trim( (string) $genre ) );
+	}
+
 	public function filter_new_user_email( $wp_new_user_notification_email, $user, $blogname ) {
 		$settings = $this->get_settings();
 
@@ -319,7 +363,8 @@ class CNE_Custom_New_User_Email {
 		);
 
 		$subject = $this->replace_placeholders( $settings['subject'], $replacements, $user );
-		$message = $this->replace_placeholders( $settings['message'], $replacements, $user );
+		$message_template = $this->get_message_template_for_user( $settings, $user );
+		$message = $this->replace_placeholders( $message_template, $replacements, $user );
 
 		$wp_new_user_notification_email['subject'] = $subject;
 		$wp_new_user_notification_email['message'] = $message;

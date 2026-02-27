@@ -11,6 +11,7 @@ Customize the email a user receives when an administrator creates the account an
 - Enable/disable switch from WordPress admin
 - One-click test email button for template preview
 - Optional preview recipient email for test sends
+- Separate email content for users with `genre=F`
 
 ## Placeholders
 
@@ -37,6 +38,12 @@ Examples:
 5. Update subject/message and save.
 6. (Optional) Set **Preview recipient email**.
 7. Use **Send test email** to receive a preview at that address (or your current admin email if empty).
+
+## Genre-based content
+
+- **Email message (M / default)** is used for users with meta `genre = M` and as fallback for any other value.
+- **Email message for genre F** is used when user meta `genre = F`.
+- Example custom meta usage in message: `{meta:parrain}`.
 
 ## Notes
 
