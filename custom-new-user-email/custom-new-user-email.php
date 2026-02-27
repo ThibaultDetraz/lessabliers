@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Custom New User Email
- * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.5.0
+ * Description: Personnalise l’email envoyé aux utilisateurs quand un administrateur crée leur compte et qu’ils doivent définir un mot de passe.
+ * Version: 1.6.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -30,8 +30,8 @@ class CNE_Custom_New_User_Email {
 			'from_name'  => '',
 			'from_email' => '',
 			'preview_email' => '',
-			'subject'    => 'Welcome to {site_name}',
-			'message'    => "Hi {username},\n\nYour account has been created on {site_name}.\n\nSet your password here:\n{set_password_url}\n\nThen log in at:\n{login_url}\n\nIf you did not expect this account, please ignore this email.",
+			'subject'    => 'Bienvenue sur {site_name}',
+			'message'    => "Bonjour {username},\n\nVotre compte a été créé sur {site_name}.\n\nDéfinissez votre mot de passe ici :\n{set_password_url}\n\nPuis connectez-vous ici :\n{login_url}\n\nSi vous n’attendiez pas cet email, vous pouvez l’ignorer.",
 			'message_f'  => '',
 		);
 	}
@@ -48,8 +48,8 @@ class CNE_Custom_New_User_Email {
 
 	public function register_settings_page() {
 		add_options_page(
-			__( 'Custom New User Email', 'custom-new-user-email' ),
-			__( 'Custom New User Email', 'custom-new-user-email' ),
+			__( 'Email Nouvel Utilisateur Personnalisé', 'custom-new-user-email' ),
+			__( 'Email Nouvel Utilisateur', 'custom-new-user-email' ),
 			'manage_options',
 			'custom-new-user-email',
 			array( $this, 'render_settings_page' )
@@ -100,17 +100,17 @@ class CNE_Custom_New_User_Email {
 		$meta_example = '{meta:parrain}';
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Custom New User Email', 'custom-new-user-email' ); ?></h1>
-			<p><?php esc_html_e( 'Customize the account creation email sent when an admin creates a user and WordPress asks them to set a password.', 'custom-new-user-email' ); ?></p>
+			<h1><?php esc_html_e( 'Email Nouvel Utilisateur Personnalisé', 'custom-new-user-email' ); ?></h1>
+			<p><?php esc_html_e( 'Personnalisez l’email de création de compte envoyé quand un administrateur crée un utilisateur et que WordPress lui demande de définir un mot de passe.', 'custom-new-user-email' ); ?></p>
 
 			<?php if ( 'test_sent' === $notice ) : ?>
-				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Test email sent successfully.', 'custom-new-user-email' ); ?></p></div>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Email de test envoyé avec succès.', 'custom-new-user-email' ); ?></p></div>
 			<?php elseif ( 'test_error' === $notice ) : ?>
-				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Test email could not be sent. Check your mail configuration.', 'custom-new-user-email' ); ?></p></div>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'L’email de test n’a pas pu être envoyé. Vérifiez votre configuration d’envoi.', 'custom-new-user-email' ); ?></p></div>
 			<?php elseif ( 'test_missing_email' === $notice ) : ?>
-				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'No email found for the current admin user.', 'custom-new-user-email' ); ?></p></div>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Aucun email trouvé pour l’utilisateur administrateur actuel.', 'custom-new-user-email' ); ?></p></div>
 			<?php elseif ( 'test_invalid_email' === $notice ) : ?>
-				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Preview recipient email is not valid.', 'custom-new-user-email' ); ?></p></div>
+				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'L’email du destinataire de prévisualisation n’est pas valide.', 'custom-new-user-email' ); ?></p></div>
 			<?php endif; ?>
 
 			<form method="post" action="options.php">
@@ -118,63 +118,63 @@ class CNE_Custom_New_User_Email {
 
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Enable custom email', 'custom-new-user-email' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Activer l’email personnalisé', 'custom-new-user-email' ); ?></th>
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[enabled]" value="1" <?php checked( 1, (int) $settings['enabled'] ); ?> />
-								<?php esc_html_e( 'Replace default WordPress email for new users', 'custom-new-user-email' ); ?>
+								<?php esc_html_e( 'Remplacer l’email WordPress par défaut pour les nouveaux utilisateurs', 'custom-new-user-email' ); ?>
 							</label>
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Email format', 'custom-new-user-email' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Format de l’email', 'custom-new-user-email' ); ?></th>
 						<td>
 							<label>
 								<input id="cne_send_html" type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[send_html]" value="1" <?php checked( 1, (int) $settings['send_html'] ); ?> />
-								<?php esc_html_e( 'Send as HTML email', 'custom-new-user-email' ); ?>
+								<?php esc_html_e( 'Envoyer en HTML', 'custom-new-user-email' ); ?>
 							</label>
-							<p class="description"><?php esc_html_e( 'When enabled, basic HTML tags are allowed in the message template.', 'custom-new-user-email' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Quand cette option est activée, les balises HTML de base sont autorisées dans le modèle de message.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_from_name"><?php esc_html_e( 'From name', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_from_name"><?php esc_html_e( 'Nom de l’expéditeur', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<input id="cne_from_name" class="regular-text" type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[from_name]" value="<?php echo esc_attr( $settings['from_name'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Leave empty to use WordPress default sender name.', 'custom-new-user-email' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optionnel. Laissez vide pour utiliser le nom d’expéditeur WordPress par défaut.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_from_email"><?php esc_html_e( 'From email', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_from_email"><?php esc_html_e( 'Email de l’expéditeur', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<input id="cne_from_email" class="regular-text" type="email" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[from_email]" value="<?php echo esc_attr( $settings['from_email'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Leave empty to use WordPress default sender email.', 'custom-new-user-email' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optionnel. Laissez vide pour utiliser l’email d’expéditeur WordPress par défaut.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_subject"><?php esc_html_e( 'Email subject', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_subject"><?php esc_html_e( 'Objet de l’email', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<input id="cne_subject" class="regular-text" type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[subject]" value="<?php echo esc_attr( $settings['subject'] ); ?>" required />
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_preview_email"><?php esc_html_e( 'Preview recipient email', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_preview_email"><?php esc_html_e( 'Email destinataire de prévisualisation', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<input id="cne_preview_email" class="regular-text" type="email" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[preview_email]" value="<?php echo esc_attr( $settings['preview_email'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Used by “Send test email”. If empty, your current admin email is used.', 'custom-new-user-email' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optionnel. Utilisé par « Envoyer un email de test ». Si vide, l’email de l’administrateur actuel est utilisé.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_message"><?php esc_html_e( 'Email message (M / default)', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_message"><?php esc_html_e( 'Message email (M / défaut)', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<textarea id="cne_message" class="large-text code" rows="12" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[message]" required><?php echo esc_textarea( $settings['message'] ); ?></textarea>
 							<p class="description">
-								<?php esc_html_e( 'Available placeholders:', 'custom-new-user-email' ); ?>
+								<?php esc_html_e( 'Placeholders disponibles :', 'custom-new-user-email' ); ?>
 								<code>{site_name}</code>,
 								<code>{username}</code>,
 								<code>{user_email}</code>,
@@ -186,10 +186,10 @@ class CNE_Custom_New_User_Email {
 					</tr>
 
 					<tr>
-						<th scope="row"><label for="cne_message_f"><?php esc_html_e( 'Email message for genre F', 'custom-new-user-email' ); ?></label></th>
+						<th scope="row"><label for="cne_message_f"><?php esc_html_e( 'Message email pour genre F', 'custom-new-user-email' ); ?></label></th>
 						<td>
 							<textarea id="cne_message_f" class="large-text code" rows="12" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[message_f]"><?php echo esc_textarea( $settings['message_f'] ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Used when user meta genre is F. If empty, default message is used.', 'custom-new-user-email' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Utilisé quand la meta utilisateur genre vaut F. Si vide, le message par défaut est utilisé.', 'custom-new-user-email' ); ?></p>
 						</td>
 					</tr>
 				</table>
@@ -198,24 +198,34 @@ class CNE_Custom_New_User_Email {
 			</form>
 
 			<hr />
-			<h2><?php esc_html_e( 'Live Preview', 'custom-new-user-email' ); ?></h2>
-			<p><?php esc_html_e( 'Preview both email contents with sample placeholder values before sending.', 'custom-new-user-email' ); ?></p>
+			<h2><?php esc_html_e( 'Prévisualisation en direct', 'custom-new-user-email' ); ?></h2>
+			<p><?php esc_html_e( 'Prévisualisez les deux contenus d’email avec des valeurs d’exemple avant envoi.', 'custom-new-user-email' ); ?></p>
 			<p>
-				<button type="button" class="button" id="cne_refresh_preview"><?php esc_html_e( 'Refresh live preview', 'custom-new-user-email' ); ?></button>
+				<button type="button" class="button" id="cne_refresh_preview"><?php esc_html_e( 'Actualiser la prévisualisation', 'custom-new-user-email' ); ?></button>
 			</p>
-			<table class="widefat striped" role="presentation">
+			<style>
+				.cne-preview-table tbody tr:hover th,
+				.cne-preview-table tbody tr:hover td {
+					background: inherit !important;
+				}
+
+				.cne-preview-content a:hover {
+					text-decoration: none !important;
+				}
+			</style>
+			<table class="widefat striped cne-preview-table" role="presentation">
 				<tbody>
 					<tr>
-						<th style="width:220px;"><?php esc_html_e( 'Subject preview', 'custom-new-user-email' ); ?></th>
+						<th style="width:220px;"><?php esc_html_e( 'Prévisualisation objet', 'custom-new-user-email' ); ?></th>
 						<td><code id="cne_preview_subject"></code></td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Message preview (M / default)', 'custom-new-user-email' ); ?></th>
-						<td><div id="cne_preview_message_m" style="white-space:pre-wrap;"></div></td>
+						<th><?php esc_html_e( 'Prévisualisation message (M / défaut)', 'custom-new-user-email' ); ?></th>
+						<td><div id="cne_preview_message_m" class="cne-preview-content" style="white-space:pre-wrap;"></div></td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Message preview (genre F)', 'custom-new-user-email' ); ?></th>
-						<td><div id="cne_preview_message_f" style="white-space:pre-wrap;"></div></td>
+						<th><?php esc_html_e( 'Prévisualisation message (genre F)', 'custom-new-user-email' ); ?></th>
+						<td><div id="cne_preview_message_f" class="cne-preview-content" style="white-space:pre-wrap;"></div></td>
 					</tr>
 				</tbody>
 			</table>
@@ -223,12 +233,12 @@ class CNE_Custom_New_User_Email {
 			<script>
 				(function () {
 					var placeholders = <?php echo wp_json_encode( array(
-						'{site_name}'        => 'My Website',
+						'{site_name}'        => 'Mon site web',
 						'{username}'         => 'johndoe',
-						'{user_email}'       => 'john@example.com',
+						'{user_email}'       => 'jean@example.com',
 						'{set_password_url}' => 'https://example.com/wp-login.php?action=rp',
 						'{login_url}'        => 'https://example.com/wp-login.php',
-						'{meta:parrain}'     => 'Jean Dupont',
+						'{meta:parrain}'     => 'Pierre Martin',
 					) ); ?>;
 
 					function replacePlaceholders(content) {
@@ -300,12 +310,12 @@ class CNE_Custom_New_User_Email {
 			</script>
 
 			<hr />
-			<h2><?php esc_html_e( 'Email Preview', 'custom-new-user-email' ); ?></h2>
-			<p><?php esc_html_e( 'Send a test email using your saved settings to the preview recipient email (or your current admin email if empty).', 'custom-new-user-email' ); ?></p>
+			<h2><?php esc_html_e( 'Aperçu par email', 'custom-new-user-email' ); ?></h2>
+			<p><?php esc_html_e( 'Envoyez un email de test avec vos réglages enregistrés vers l’email de prévisualisation (ou l’email administrateur actuel si vide).', 'custom-new-user-email' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="cne_send_test_email" />
 				<?php wp_nonce_field( 'cne_send_test_email' ); ?>
-				<?php submit_button( __( 'Send test email', 'custom-new-user-email' ), 'secondary', 'submit', false ); ?>
+				<?php submit_button( __( 'Envoyer un email de test', 'custom-new-user-email' ), 'secondary', 'submit', false ); ?>
 			</form>
 		</div>
 		<?php
@@ -313,7 +323,7 @@ class CNE_Custom_New_User_Email {
 
 	public function handle_send_test_email() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You are not allowed to do this.', 'custom-new-user-email' ) );
+			wp_die( esc_html__( 'Vous n’êtes pas autorisé à faire cela.', 'custom-new-user-email' ) );
 		}
 
 		check_admin_referer( 'cne_send_test_email' );
