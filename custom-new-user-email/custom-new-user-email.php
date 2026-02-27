@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom New User Email
  * Description: Customize the email sent to users when an administrator creates their account and they need to set a password.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Custom
  * License: GPL-2.0-or-later
  * Requires at least: 5.8
@@ -196,6 +196,97 @@ class CNE_Custom_New_User_Email {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<hr />
+			<h2><?php esc_html_e( 'Live Preview', 'custom-new-user-email' ); ?></h2>
+			<p><?php esc_html_e( 'Preview both email contents with sample placeholder values before sending.', 'custom-new-user-email' ); ?></p>
+			<p>
+				<button type="button" class="button" id="cne_refresh_preview"><?php esc_html_e( 'Refresh live preview', 'custom-new-user-email' ); ?></button>
+			</p>
+			<table class="widefat striped" role="presentation">
+				<tbody>
+					<tr>
+						<th style="width:220px;"><?php esc_html_e( 'Subject preview', 'custom-new-user-email' ); ?></th>
+						<td><code id="cne_preview_subject"></code></td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Message preview (M / default)', 'custom-new-user-email' ); ?></th>
+						<td><pre id="cne_preview_message_m" style="white-space:pre-wrap; margin:0;"></pre></td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Message preview (genre F)', 'custom-new-user-email' ); ?></th>
+						<td><pre id="cne_preview_message_f" style="white-space:pre-wrap; margin:0;"></pre></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<script>
+				(function () {
+					var placeholders = <?php echo wp_json_encode( array(
+						'{site_name}'        => 'My Website',
+						'{username}'         => 'johndoe',
+						'{user_email}'       => 'john@example.com',
+						'{set_password_url}' => 'https://example.com/wp-login.php?action=rp',
+						'{login_url}'        => 'https://example.com/wp-login.php',
+						'{meta:parrain}'     => 'Jean Dupont',
+					) ); ?>;
+
+					function replacePlaceholders(content) {
+						var output = String(content || '');
+
+						Object.keys(placeholders).forEach(function (key) {
+							output = output.split(key).join(placeholders[key]);
+						});
+
+						output = output.replace(/\{meta:([^}]+)\}/g, function (match, metaKey) {
+							var normalizedKey = String(metaKey || '').trim();
+
+							if (!normalizedKey) {
+								return '';
+							}
+
+							return '[meta:' + normalizedKey + ']';
+						});
+
+						return output;
+					}
+
+					function renderPreview() {
+						var subjectInput = document.getElementById('cne_subject');
+						var messageInput = document.getElementById('cne_message');
+						var messageFInput = document.getElementById('cne_message_f');
+						var subjectPreview = document.getElementById('cne_preview_subject');
+						var messagePreviewM = document.getElementById('cne_preview_message_m');
+						var messagePreviewF = document.getElementById('cne_preview_message_f');
+
+						if (!subjectInput || !messageInput || !messageFInput || !subjectPreview || !messagePreviewM || !messagePreviewF) {
+							return;
+						}
+
+						subjectPreview.textContent = replacePlaceholders(subjectInput.value);
+						messagePreviewM.textContent = replacePlaceholders(messageInput.value);
+						messagePreviewF.textContent = messageFInput.value
+							? replacePlaceholders(messageFInput.value)
+							: replacePlaceholders(messageInput.value);
+					}
+
+					var refreshButton = document.getElementById('cne_refresh_preview');
+
+					if (refreshButton) {
+						refreshButton.addEventListener('click', renderPreview);
+					}
+
+					['cne_subject', 'cne_message', 'cne_message_f'].forEach(function (id) {
+						var el = document.getElementById(id);
+
+						if (el) {
+							el.addEventListener('input', renderPreview);
+						}
+					});
+
+					renderPreview();
+				})();
+			</script>
 
 			<hr />
 			<h2><?php esc_html_e( 'Email Preview', 'custom-new-user-email' ); ?></h2>

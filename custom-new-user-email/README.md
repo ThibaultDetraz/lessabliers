@@ -12,6 +12,7 @@ Customize the email a user receives when an administrator creates the account an
 - One-click test email button for template preview
 - Optional preview recipient email for test sends
 - Separate email content for users with `genre=F`
+- Live preview button for both email contents (M/default and F)
 
 ## Placeholders
 
