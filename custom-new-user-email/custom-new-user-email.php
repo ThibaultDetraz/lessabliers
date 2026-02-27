@@ -131,7 +131,7 @@ class CNE_Custom_New_User_Email {
 						<th scope="row"><?php esc_html_e( 'Email format', 'custom-new-user-email' ); ?></th>
 						<td>
 							<label>
-								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[send_html]" value="1" <?php checked( 1, (int) $settings['send_html'] ); ?> />
+								<input id="cne_send_html" type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[send_html]" value="1" <?php checked( 1, (int) $settings['send_html'] ); ?> />
 								<?php esc_html_e( 'Send as HTML email', 'custom-new-user-email' ); ?>
 							</label>
 							<p class="description"><?php esc_html_e( 'When enabled, basic HTML tags are allowed in the message template.', 'custom-new-user-email' ); ?></p>
@@ -211,11 +211,11 @@ class CNE_Custom_New_User_Email {
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Message preview (M / default)', 'custom-new-user-email' ); ?></th>
-						<td><pre id="cne_preview_message_m" style="white-space:pre-wrap; margin:0;"></pre></td>
+						<td><div id="cne_preview_message_m" style="white-space:pre-wrap;"></div></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Message preview (genre F)', 'custom-new-user-email' ); ?></th>
-						<td><pre id="cne_preview_message_f" style="white-space:pre-wrap; margin:0;"></pre></td>
+						<td><div id="cne_preview_message_f" style="white-space:pre-wrap;"></div></td>
 					</tr>
 				</tbody>
 			</table>
@@ -255,6 +255,7 @@ class CNE_Custom_New_User_Email {
 						var subjectInput = document.getElementById('cne_subject');
 						var messageInput = document.getElementById('cne_message');
 						var messageFInput = document.getElementById('cne_message_f');
+						var htmlToggle = document.getElementById('cne_send_html');
 						var subjectPreview = document.getElementById('cne_preview_subject');
 						var messagePreviewM = document.getElementById('cne_preview_message_m');
 						var messagePreviewF = document.getElementById('cne_preview_message_f');
@@ -263,11 +264,21 @@ class CNE_Custom_New_User_Email {
 							return;
 						}
 
-						subjectPreview.textContent = replacePlaceholders(subjectInput.value);
-						messagePreviewM.textContent = replacePlaceholders(messageInput.value);
-						messagePreviewF.textContent = messageFInput.value
+						var htmlMode = !!(htmlToggle && htmlToggle.checked);
+						var renderedMessageM = replacePlaceholders(messageInput.value);
+						var renderedMessageF = messageFInput.value
 							? replacePlaceholders(messageFInput.value)
-							: replacePlaceholders(messageInput.value);
+							: renderedMessageM;
+
+						subjectPreview.textContent = replacePlaceholders(subjectInput.value);
+
+						if (htmlMode) {
+							messagePreviewM.innerHTML = renderedMessageM;
+							messagePreviewF.innerHTML = renderedMessageF;
+						} else {
+							messagePreviewM.textContent = renderedMessageM;
+							messagePreviewF.textContent = renderedMessageF;
+						}
 					}
 
 					var refreshButton = document.getElementById('cne_refresh_preview');
@@ -276,7 +287,7 @@ class CNE_Custom_New_User_Email {
 						refreshButton.addEventListener('click', renderPreview);
 					}
 
-					['cne_subject', 'cne_message', 'cne_message_f'].forEach(function (id) {
+					['cne_subject', 'cne_message', 'cne_message_f', 'cne_send_html'].forEach(function (id) {
 						var el = document.getElementById(id);
 
 						if (el) {
